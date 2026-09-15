@@ -1,0 +1,35 @@
+# Local agent runtime state
+.omx/
+.omc/
+.gjc/
+
+# Python runtime and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# macOS metadata
+.DS_Store
+
+# Local secrets and credentials
+.env
+.env.*
+credentials
+credentials.*
+credentials/
+.credentials
+.credentials.*
+.credentials/
+*.pem
+*.key
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+tmp/
+temp/
+.cache/
