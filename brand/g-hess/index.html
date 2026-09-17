@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G-HeSS AI Agent · 로고 시안</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#f5f5fa;color:#303052;font-family:system-ui,sans-serif}main{max-width:1440px;margin:auto;padding:30px 24px 60px}header{display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:20px}p{line-height:1.7;color:#61617a}button,a{font:inherit}button{border:1px solid #cdcde2;border-radius:24px;background:white;padding:10px 18px;color:#4747b3;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #6262c4;outline-offset:4px}.board{width:100%;height:auto;display:block;margin:20px 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.card{background:white;border:1px solid #e0e0ee;border-radius:20px;overflow:hidden}.sample{padding:32px 24px;min-height:164px;display:flex;align-items:center;justify-content:center;background:#fff}.sample img{width:100%;height:auto}.details{padding:0 24px 26px}h2{font-size:20px;margin-top:20px}.tag{color:#6262c4;font-size:12px}a{color:#4747b3;text-underline-offset:4px}.links{display:flex;flex-wrap:wrap;gap:12px;font-size:14px}.dark .sample{background:#4747b3}.fine{font-size:13px;margin-top:28px}@media(max-width:800px){.grid{grid-template-columns:1fr}header{align-items:flex-start}.board{margin:8px 0 20px}main{padding:16px}.sample img{max-width:520px}}
+</style>
+<main>
+  <header><h1>G-HeSS AI Agent · 로고 시안</h1><button id="theme" type="button" aria-pressed="false">어두운 배경 보기</button></header>
+  <p>사내 문서 검색과 근거 기반 답변을 위한 아이덴티티. 아래 세 시안은 아이콘 단독, 텍스트 단독, 가로 조합형으로 사용할 수 있습니다.</p>
+  <img class="board" src="preview.svg" alt="G Link, Doc Dialogue, Knowledge Grid 세 가지 로고 시안 비교">
+  <div class="grid">
+    <article class="card"><div class="sample"><img data-base="01-g-link" src="01-g-link/logo-horizontal.svg" alt="G Link 로고"></div><div class="details"><span class="tag">01 · 추천 시안</span><h2>G Link</h2><p>G의 열린 형태와 독립된 연결점을 결합했습니다. 서비스 이름을 직접 드러내며 작은 앱 아이콘에도 적용하기 쉬운 방향입니다.</p><div class="links"><a href="01-g-link/icon.svg" download>아이콘 SVG</a><a href="01-g-link/wordmark.svg" download>텍스트 SVG</a><a href="01-g-link/logo-horizontal.svg" download>조합형 SVG</a><a href="01-g-link/app-icon.png" download>앱 아이콘 PNG</a></div></div></article>
+    <article class="card"><div class="sample"><img data-base="02-doc-dialogue" src="02-doc-dialogue/logo-horizontal.svg" alt="Doc Dialogue 로고"></div><div class="details"><span class="tag">02 · 문서와 대화</span><h2>Doc Dialogue</h2><p>접힌 문서와 말풍선을 한 형태로 묶었습니다. 문서를 바탕으로 대화하고 답을 찾는 서비스의 역할을 표현합니다.</p><div class="links"><a href="02-doc-dialogue/icon.svg" download>아이콘 SVG</a><a href="02-doc-dialogue/wordmark.svg" download>텍스트 SVG</a><a href="02-doc-dialogue/logo-horizontal.svg" download>조합형 SVG</a><a href="02-doc-dialogue/app-icon.png" download>앱 아이콘 PNG</a></div></div></article>
+    <article class="card"><div class="sample"><img data-base="03-knowledge-grid" src="03-knowledge-grid/logo-horizontal.svg" alt="Knowledge Grid 로고"></div><div class="details"><span class="tag">03 · 지식의 연결</span><h2>Knowledge Grid</h2><p>분산된 정보가 하나의 구조로 연결되는 모습입니다. 여러 문서의 근거를 종합하는 AI 에이전트의 성격을 담았습니다.</p><div class="links"><a href="03-knowledge-grid/icon.svg" download>아이콘 SVG</a><a href="03-knowledge-grid/wordmark.svg" download>텍스트 SVG</a><a href="03-knowledge-grid/logo-horizontal.svg" download>조합형 SVG</a><a href="03-knowledge-grid/app-icon.png" download>앱 아이콘 PNG</a></div></div></article>
+  </div>
+  <p class="fine">표기: G-HeSS AI Agent · 기본 색상: Indigo #4747B3 / 보조 #6262C4 / 밝은 포인트 #C9C9FF<br>로고의 모든 글자는 벡터로 작성되어 별도 글꼴 설치가 필요 없습니다. 최종안 선택 전 검토용 시안입니다.</p>
+</main>
+<script>
+document.getElementById('theme').addEventListener('click', function () {
+  const dark = document.body.classList.toggle('dark');
+  this.setAttribute('aria-pressed', String(dark));
+  this.textContent = dark ? '밝은 배경 보기' : '어두운 배경 보기';
+  document.querySelectorAll('[data-base]').forEach(img => { img.src = `${img.dataset.base}/logo-horizontal${dark ? '-white' : ''}.svg`; });
+});
+</script>
+</html>
