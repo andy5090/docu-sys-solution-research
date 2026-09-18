@@ -18,8 +18,44 @@ class CapacityTests(unittest.TestCase):
         self.assertAlmostEqual(baseline["peak_qpm"], 62.5)
         self.assertEqual(baseline["required_concurrent_calls"], 36)
         self.assertEqual(baseline["required_total_tpm"], 309375)
-        self.assertEqual(result["storage"][1]["chunks"], 3660000)
-        self.assertAlmostEqual(result["storage"][1]["raw_vector_gib"], 13.9617919921875)
+        self.assertEqual(result["storage"][1]["chunks"], 7585436)
+        self.assertAlmostEqual(result["storage"][1]["raw_vector_gib"], 28.936141967773438)
+        self.assertAlmostEqual(result["storage"][1]["query_ram_gib_per_replica"], 101.00902775355749)
+
+    def test_reported_chunks_do_not_change_page_estimates(self):
+        result = calculate(self.data)
+        self.assertEqual([item["pages"] for item in result["storage"]], [610000, 1220000, 2440000])
+        self.assertEqual([item["chunks"] for item in result["storage"]], [7585436] * 3)
+        self.assertEqual([item["chunks_source"] for item in result["storage"]], ["reported"] * 3)
+        self.assertEqual([item["embedding_input_tokens"] for item in result["ingestion"]], [3034174400] * 3)
+
+    def test_missing_or_unknown_chunks_use_page_estimates(self):
+        for facts in ({key: value for key, value in self.data["facts"].items() if key != "chunks"},
+                      {**self.data["facts"], "chunks": None}):
+            candidate = copy.deepcopy(self.data)
+            candidate["facts"] = facts
+            stored = calculate(candidate)["storage"]
+            self.assertEqual([item["chunks"] for item in stored], [1220000, 3660000, 9760000])
+            self.assertEqual([item["chunks_source"] for item in stored], ["estimated"] * 3)
+
+    def test_zero_reported_chunks_do_not_fall_back(self):
+        self.data["facts"]["chunks"] = 0
+        result = calculate(self.data)
+        self.assertTrue(all(item["raw_vector_gib"] == 0 for item in result["storage"]))
+        self.assertTrue(all(item["stage_hours"]["임베딩"] == 0 for item in result["ingestion"]))
+        self.assertGreater(result["ingestion"][1]["stage_hours"]["본문 파싱"], 0)
+
+    def test_invalid_reported_chunk_counts_rejected(self):
+        for value in (-1, 1.5, True, "7585436", [], {}, float("nan")):
+            with self.subTest(value=value):
+                self.data["facts"]["chunks"] = value
+                with self.assertRaises(ValueError):
+                    calculate(self.data)
+
+    def test_chunks_without_documents_rejected(self):
+        self.data["facts"]["documents"] = 0
+        with self.assertRaises(ValueError):
+            calculate(self.data)
 
     def test_unknown_quota_is_not_zero_or_success(self):
         item = calculate(self.data)["online"][1]
@@ -49,10 +85,10 @@ class CapacityTests(unittest.TestCase):
         item = calculate(self.data)["ingestion"][1]
         self.assertEqual(item["bottleneck"], "임베딩")
         # 24000 TPM /400 tokens =60 chunks/min =1/s.
-        self.assertAlmostEqual(item["stage_hours"]["임베딩"], 3660000 / 0.7 / 3600)
+        self.assertAlmostEqual(item["stage_hours"]["임베딩"], 7585436 / 0.7 / 3600)
 
     def test_zero_work_and_no_generation(self):
-        self.data["facts"].update(daily_users=0, documents=0, source_gb=0)
+        self.data["facts"].update(daily_users=0, documents=0, source_gb=0, chunks=0)
         result = calculate(self.data)
         self.assertEqual(result["online"][1]["required_concurrent_calls"], 0)
         self.assertEqual(result["storage"][1]["raw_vector_gib"], 0)

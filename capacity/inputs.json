@@ -1,11 +1,11 @@
 {
-  "as_of": "2026-09-14",
+  "as_of": "2026-09-18",
   "provenance": {
-    "facts": "사용자 제공. 1500명은 08~18시의 일일 이용자라고 해석; 동시접속자 수가 아님. DeDRM 완료 약 61000여 문서가 약 95GB. GB는 10^9 bytes로 해석.",
-    "assumptions": "아래 facts 외 모든 값은 실측 전 계획 가정. GLM 모델의 공개 사양 또는 사내 성능 보장이 아님.",
+    "facts": "사용자 제공. 1500명은 08~18시의 일일 이용자라고 해석; 동시접속자 수가 아님. DeDRM 완료 약 61000여 문서가 약 95GB. 2026-09-15 임베딩 대상 전량 완료, 총 청크 수 7585436개 확인; 프로덕션 이관·메타데이터 보강·검색 최적화는 남은 작업. 임베딩 모델 BGE-M3, 유사도 COSINE 확인. 모델 표준 dense 차원은 1024(https://huggingface.co/BAAI/bge-m3); 실제 schema·dtype·고유 PK/이력/삭제 범위·dense 외 출력 보존 여부는 미확인. GB는 10^9 bytes로 해석.",
+    "assumptions": "facts의 사용자 입력과 BGE-M3 표준 dense 차원 1024 외 수치는 실측 전 계획 가정. 청크당 dense 벡터 1개, 입력 청크 전체 load, 저장 dtype float32를 가정하며 sparse·multi-vector 비용은 별도 산정. 페이지 수·파생자산 비율은 청크 수와 독립적인 가정. GLM 모델의 공개 사양 또는 사내 성능 보장이 아님.",
     "limits": "사내 타 서비스와 배치 몫을 제외하고 온라인에 배정된 쿼터를 입력. null은 미확인; 0은 사용 불가. TPM 과금/예약 기준은 제공자 계약에 맞춰야 함."
   },
-  "facts": {"daily_users": 1500, "service_hours": 10, "documents": 61000, "source_gb": 95},
+  "facts": {"daily_users": 1500, "service_hours": 10, "documents": 61000, "source_gb": 95, "chunks": 7585436},
   "online": {
     "target_utilization": 0.7,
     "input_tokens_per_call": 4000,

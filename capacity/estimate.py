@@ -26,8 +26,18 @@ def validate(data):
     for section in ("facts", "online", "storage", "ingestion"):
         for key, value in data[section].items():
             if isinstance(value, (dict, list)):
+                if section == "facts" and key == "chunks":
+                    raise ValueError("facts.chunks: nonnegative integer or null required")
+                continue
+            if section == "facts" and key == "chunks" and value is None:
                 continue
             number(value, f"{section}.{key}")
+    chunks = data["facts"].get("chunks")
+    if chunks is not None:
+        if not isinstance(chunks, int):
+            raise ValueError("facts.chunks: nonnegative integer or null required")
+        if chunks > 0 and data["facts"]["documents"] == 0:
+            raise ValueError("positive chunks require a positive document count")
     for key in ("service_hours",):
         number(data["facts"][key], key, positive=True)
     if data["facts"]["service_hours"] > 24:
@@ -107,11 +117,12 @@ def online(data, scenario):
 def storage(data, scenario):
     f, a = data["facts"], data["storage"]
     pages = f["documents"] * scenario["pages_per_document"]
-    chunks = pages * scenario["chunks_per_page"]
+    reported_chunks = f.get("chunks")
+    chunks = reported_chunks if reported_chunks is not None else pages * scenario["chunks_per_page"]
     raw = chunks * a["embedding_dimensions"] * a["bytes_per_dimension"]
     scalar = chunks * a["milvus_scalar_bytes_per_chunk"]
     retained = a["retained_revision_factor"]
-    # Query memory loads the current revision only; history is in separate unloaded collections.
+    # Load the selected chunk set once per replica; retained data adds storage headroom only.
     memory = (raw * a["milvus_resident_vector_factor"] + scalar) / GIB / a["milvus_memory_utilization"] + a["milvus_process_overhead_gib_per_replica"]
     objects = (f["source_gb"] * 1e9 * (1 + scenario["extracted_asset_source_ratio"]) + chunks * a["normalized_bytes_per_chunk"]) * retained
     milvus = (raw * a["milvus_persisted_vector_factor"] + scalar) * retained
@@ -122,6 +133,7 @@ def storage(data, scenario):
     backups = live * a["independent_backup_copies"]
     return {
         "name": scenario["name"], "pages": pages, "chunks": chunks,
+        "chunks_source": "reported" if reported_chunks is not None else "estimated",
         "raw_vector_gib": raw / GIB, "milvus_gib": milvus / GIB,
         "query_ram_gib_per_replica": memory, "query_ram_gib_all_replicas": memory * a["query_replicas"],
         "objects_gib": objects / GIB, "keyword_gib": keyword / GIB, "metadata_gib": metadata / GIB,
@@ -160,7 +172,8 @@ def calculate(data):
 
 def markdown(data, result):
     f, a, s, ing = data["facts"], data["online"], data["storage"], data["ingestion"]
-    lines = ["# 트래픽·리소스 계산 결과", "", f"기준일: {data['as_of']}. `capacity/inputs.json`에서 자동 계산. 실측 성능 또는 구매 확정 사양이 아니다.", "", f"입력: 일일 사용자 약 {f['daily_users']:,.0f}명, 일 {f['service_hours']}시간, DeDRM 완료 문서 약 {f['documents']:,.0f}건, 파일 약 {f['source_gb']}GB. GB=10^9 bytes, GiB=2^30 bytes. 나머지는 계획 가정이며 원리와 한계는 [산정 방법](트래픽_리소스_산정.md)을 참조한다.", "", "## 1. 온라인 요청과 모델 쿼터", "", f"평균 모델 시간 = 첫 토큰 {a['mean_ttft_seconds']}초 + 출력 {a['output_tokens_per_call']}토큰 / {a['mean_output_tokens_per_second']} tok/s = {result['online'][0]['mean_model_seconds']:.1f}초. 계획 이용률 {a['target_utilization']:.0%}. 질문 수·피크·생성 비율은 시나리오별 가정.", "", "| 지표 | " + " | ".join(x['name'] for x in result['online']) + " |", "|---|" + "---:|" * len(result['online'])]
+    chunk_note = f" 사용자 확인 청크 {f['chunks']:,}개." if f.get("chunks") is not None else " 청크 수는 페이지 기반 시나리오로 추정."
+    lines = ["# 트래픽·리소스 계산 결과", "", f"기준일: {data['as_of']}. `capacity/inputs.json`에서 자동 계산. 실측 성능 또는 구매 확정 사양이 아니다.", "", f"입력: 일일 사용자 약 {f['daily_users']:,.0f}명, 일 {f['service_hours']}시간, DeDRM 완료 문서 약 {f['documents']:,.0f}건, 파일 약 {f['source_gb']}GB.{chunk_note} GB=10^9 bytes, GiB=2^30 bytes. 나머지는 계획 가정이며 원리와 한계는 [산정 방법](트래픽_리소스_산정.md)을 참조한다.", "", "## 1. 온라인 요청과 모델 쿼터", "", f"평균 모델 시간 = 첫 토큰 {a['mean_ttft_seconds']}초 + 출력 {a['output_tokens_per_call']}토큰 / {a['mean_output_tokens_per_second']} tok/s = {result['online'][0]['mean_model_seconds']:.1f}초. 계획 이용률 {a['target_utilization']:.0%}. 질문 수·피크·생성 비율은 시나리오별 가정.", "", "| 지표 | " + " | ".join(x['name'] for x in result['online']) + " |", "|---|" + "---:|" * len(result['online'])]
     def row(label, key, values, digits=0):
         lines.append("| " + label + " | " + " | ".join(f"{x[key]:,.{digits}f}" for x in values) + " |")
     for label, key, digits in [("하루 질문", "daily_questions", 0), ("평균 QPS", "average_qps", 3), ("피크 질문/분", "peak_qpm", 1), ("피크 LLM 호출/분", "llm_rpm", 1), ("하루 LLM 호출 기대값", "daily_llm_calls", 0), ("피크 입력 TPM 수요", "input_tpm", 0), ("피크 출력 TPM 수요", "output_tpm", 0), ("필요 입력 TPM 배정", "required_input_tpm", 0), ("필요 출력 TPM 배정", "required_output_tpm", 0), ("필요 합산 TPM 배정", "required_total_tpm", 0), ("필요 RPM 배정", "required_rpm", 0), ("필요 LLM 동시 호출 슬롯", "required_concurrent_calls", 0), ("평균 처리 중 HTTP 요청", "mean_active_http_requests", 1), ("계획 HTTP 처리 슬롯", "planned_http_slots", 0)]:
@@ -172,8 +185,10 @@ def markdown(data, result):
     for item in result["online"]:
         limit = item["known_limits_supported_qps_ceiling"]
         lines.append(f"- {item['name']}: {item['quota_status']}" + (f". 알려진 한도 중 병목={item['known_limit_bottleneck']}, 질문 처리 상한={limit:.3f} QPS." if limit is not None else ". 처리 가능 여부를 판정하지 않음."))
-    lines += ["", "## 2. 문서·Milvus·저장소", "", f"임베딩 {s['embedding_dimensions']:,}차원, 차원당 {s['bytes_per_dimension']} bytes, 현재 문서만 메모리에 적재, 질의 복제본 {s['query_replicas']}개 가정. 복제본당 RAM은 전체 현재 컬렉션의 합산값이며 프로세스 여유 {s['milvus_process_overhead_gib_per_replica']}GiB 포함. 차원·색인·메모리 계수는 실측 전 가정.", "", "| 지표 | " + " | ".join(x['name'] for x in result['storage']) + " |", "|---|" + "---:|" * len(result['storage'])]
-    for label, key, digits in [("페이지", "pages", 0), ("청크·벡터", "chunks", 0), ("float32 원시 벡터 GiB", "raw_vector_gib", 1), ("Milvus 저장 GiB", "milvus_gib", 1), ("질의 복제본당 RAM GiB", "query_ram_gib_per_replica", 1), ("복제본 2개 RAM 합계 GiB", "query_ram_gib_all_replicas", 1), ("원본·파생 자산 GiB", "objects_gib", 1), ("키워드 색인 GiB", "keyword_gib", 1), ("문서 메타 DB GiB", "metadata_gib", 1), ("상시 논리 저장 GiB", "live_gib", 1), ("재색인 추가 공간 GiB", "rebuild_extra_gib", 1), ("독립 백업 공간 GiB", "backup_gib", 1), ("여유 포함 전체 논리 할당 GiB", "allocated_logical_gib", 1)]:
+    scope_note = (f"세 시나리오 모두 사용자 확인 청크 {f['chunks']:,}개를 사용한다. 청크당 dense 벡터 1개와 전체 load를 가정하며 이력·삭제·고유 PK 범위는 이관 전에 대사한다. 페이지 수·파생자산 비율은 별도 가정이다."
+                  if f.get("chunks") is not None else "청크 수는 문서 수 × 문서당 페이지 × 페이지당 청크의 시나리오 추정값이다.")
+    lines += ["", "## 2. 문서·Milvus·저장소", "", scope_note, "", f"임베딩 {s['embedding_dimensions']:,}차원, 차원당 {s['bytes_per_dimension']} bytes, 산정 청크 전체를 메모리에 적재, 질의 복제본 {s['query_replicas']}개 가정. 복제본당 RAM은 해당 데이터 전체의 합산값이며 프로세스 여유 {s['milvus_process_overhead_gib_per_replica']}GiB 포함. 차원 입력의 근거는 [산정 방법](트래픽_리소스_산정.md)을 참조한다. 실제 schema 대조가 필요하며 저장 dtype·색인·메모리 계수는 계획 가정이다.", "", "| 지표 | " + " | ".join(x['name'] for x in result['storage']) + " |", "|---|" + "---:|" * len(result['storage'])]
+    for label, key, digits in [("페이지 (가정)", "pages", 0), ("청크 (dense 1개/청크 가정)", "chunks", 0), ("원시 dense 벡터 GiB", "raw_vector_gib", 1), ("Milvus 저장 GiB", "milvus_gib", 1), ("질의 복제본당 RAM GiB", "query_ram_gib_per_replica", 1), ("복제본 2개 RAM 합계 GiB", "query_ram_gib_all_replicas", 1), ("원본·파생 자산 GiB", "objects_gib", 1), ("키워드 색인 GiB", "keyword_gib", 1), ("문서 메타 DB GiB", "metadata_gib", 1), ("상시 논리 저장 GiB", "live_gib", 1), ("재색인 추가 공간 GiB", "rebuild_extra_gib", 1), ("독립 백업 공간 GiB", "backup_gib", 1), ("여유 포함 전체 논리 할당 GiB", "allocated_logical_gib", 1)]:
         row(label.replace("복제본 2개", f"복제본 {s['query_replicas']}개"), key, result["storage"], digits)
     lines += ["", f"개정 보유 계수 {s['retained_revision_factor']}, 재색인 {s['extra_index_generations']}세트, 전체 백업 {s['independent_backup_copies']}세트, 빈 공간 {s['storage_free_fraction']:.0%} 반영. 오브젝트 스토리지 물리 복제/EC, WAL·compaction 임시공간, 대화·감사 로그, 장기 성장, 파서 임시공간은 별도. 질의 복제본 수는 저장소 전체 복제 배수가 아니다. 새 인덱스까지 동시에 load하면 RAM도 추가로 필요하다. 키워드 색인은 서비스 전체 용량 기준으로 포함했으며 기존 G-HeSS API 재사용 시 신규 할당분과 분리한다.", "", "## 3. 전체 재처리 참고 및 증분 적재", "", f"현재 문서는 이미 파싱·OCR·임베딩 적재됨. 다음 표는 동일 규모를 전부 다시 처리할 경우의 비교값으로, 즉시 재적재를 권고하는 일정이 아니다. DeDRM은 완료됐으므로 처리 시간에서 제외. 하루 배치 {ing['batch_hours_per_day']}시간, 효율 {ing['effective_utilization']:.0%} 가정. VLM 판독·문서 요약은 제외.", "", "| 단계별 유효 경과 시간 | " + " | ".join(x['name'] for x in result['ingestion']) + " |", "|---|" + "---:|" * len(result['ingestion'])]
     for stage in result["ingestion"][0]["stage_hours"]:
