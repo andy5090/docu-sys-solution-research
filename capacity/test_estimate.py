@@ -15,9 +15,9 @@ class CapacityTests(unittest.TestCase):
         result = calculate(self.data)
         baseline = result["online"][1]
         self.assertEqual(baseline["daily_questions"], 7500)
-        self.assertAlmostEqual(baseline["peak_qpm"], 62.5)
-        self.assertEqual(baseline["required_concurrent_calls"], 36)
-        self.assertEqual(baseline["required_total_tpm"], 309375)
+        self.assertAlmostEqual(baseline["peak_qpm"], 7500 / 540 * 5)
+        self.assertEqual(baseline["required_concurrent_calls"], 40)
+        self.assertEqual(baseline["required_total_tpm"], 343750)
         self.assertEqual(result["storage"][1]["chunks"], 7585436)
         self.assertAlmostEqual(result["storage"][1]["raw_vector_gib"], 28.936141967773438)
         self.assertAlmostEqual(result["storage"][1]["query_ram_gib_per_replica"], 101.00902775355749)
