@@ -100,6 +100,11 @@ def add_table(doc, lines):
 
 
 def main():
+    source_text = SOURCE.read_text(encoding="utf-8")
+    date_match = re.search(r"기준일: (\d{4}-\d{2}-\d{2})", source_text)
+    if not date_match:
+        raise ValueError("Report must include a 기준일: YYYY-MM-DD")
+    report_date = date_match.group(1)
     doc = Document()
     section = doc.sections[0]
     section.page_width, section.page_height = Cm(21), Cm(29.7)
@@ -126,16 +131,16 @@ def main():
     header.add_run("G-HeSS AI Agent  |  서버 용량 계획").font.size = Pt(8)
     footer = section.footer.paragraphs[0]
     footer.alignment = 2
-    footer.add_run("2026-09-29  ·  계획 추정치  |  ").font.size = Pt(8)
+    footer.add_run(f"{report_date}  ·  계획 추정치  |  ").font.size = Pt(8)
     field = element("fldSimple", instr="PAGE")
     footer._p.append(field)
     doc.core_properties.title = "G-HeSS AI Agent — 트래픽 추정에 따른 권장 서버 용량"
-    doc.core_properties.subject = "1차 오픈 트래픽, 서버 자원, 모델 쿼터 및 저장소 추정"
+    doc.core_properties.subject = "Milvus 제외, 첨부·DeDRM·DOCX/PPTX 초안 생성 포함 보수적 서버 용량"
     doc.core_properties.author = "G-HeSS"
     doc.core_properties.language = "ko-KR"
     doc.core_properties.created = datetime(2026, 9, 29, tzinfo=timezone.utc)
-    doc.core_properties.modified = datetime(2026, 9, 29, tzinfo=timezone.utc)
-    lines = SOURCE.read_text(encoding="utf-8").splitlines()
+    doc.core_properties.modified = datetime.fromisoformat(report_date).replace(tzinfo=timezone.utc)
+    lines = source_text.splitlines()
     index = 0
     while index < len(lines):
         line = lines[index].strip()

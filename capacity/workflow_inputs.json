@@ -1,0 +1,39 @@
+{
+  "as_of": "2026-09-30",
+  "scope": "Milvus 및 기존 전체 문서 재색인 제외. 신규 첨부/DeDRM/OCR/임베딩 요청, RAG 답변, DOCX/PPTX 초안 생성 포함.",
+  "provenance": "사용자 확인: 일일 약 1500명, 09~18시, Milvus 별도 산정 제외. 나머지 사용 비율/작업 비용/토큰/보관 기간/사양은 보수적인 CPU-only 계획 가정이며 실측값 아님. DeDRM은 사내 제공 SDK/서비스 연계 전제.",
+  "traffic": {"daily_users": 1500, "requests_per_user": 10, "service_hours": 9, "peak_factor": 8, "target_qps": 5, "stress_qps": 10},
+  "utilization": 0.6,
+  "host_reserve_fraction": 0.2,
+  "attachments": {
+    "request_share": 0.3, "files_per_request": 2, "mb_per_file": 10,
+    "pages_per_file": 30, "dedrm_share": 0.5, "ocr_page_share": 0.5,
+    "chunks_per_page": 6, "tokens_per_chunk": 400,
+    "dedrm_cpu_seconds_per_file": 2, "dedrm_wall_seconds_per_file": 5,
+    "parse_cpu_seconds_per_page": 0.3, "parse_wall_seconds_per_file": 12,
+    "ocr_cpu_seconds_per_page": 2, "ocr_wall_seconds_per_page": 2,
+    "derived_size_ratio": 1, "retention_days": 30
+  },
+  "generation": {
+    "request_share": 0.2, "retry_factor": 1.1, "input_tokens_per_call": 6000,
+    "docx": {"share": 0.6, "pages_or_slides": 10, "calls": 4, "total_output_tokens": 6000, "render_cpu_seconds": 8, "render_wall_seconds": 10, "result_mb": 4},
+    "pptx": {"share": 0.4, "pages_or_slides": 20, "calls": 5, "total_output_tokens": 8000, "render_cpu_seconds": 20, "render_wall_seconds": 30, "result_mb": 12},
+    "retention_days": 90, "downloads_per_result": 2,
+    "other_workflow_seconds": 10, "poll_interval_seconds": 10
+  },
+  "model": {"ttft_seconds": 10, "output_tokens_per_second": 16, "chat_calls": 1.1, "chat_input_tokens": 6000, "chat_output_tokens": 800, "query_embedding_tokens": 150},
+  "storage": {"metadata_log_bytes_per_request": 51200, "metadata_log_days": 90, "backup_copies": 1, "free_fraction": 0.3, "network_internal_factor": 3},
+  "workers": {
+    "dedrm": {"name": "DeDRM 연계", "vcpu": 4, "ram_gib": 8, "slots": 8, "slot_ram_gib": 0.5, "overhead_gib": 2, "scratch_gib": 100},
+    "parse": {"name": "파싱·이미지 추출", "vcpu": 16, "ram_gib": 32, "slots": 16, "slot_ram_gib": 1, "overhead_gib": 4, "scratch_gib": 100},
+    "ocr": {"name": "CPU OCR", "vcpu": 16, "ram_gib": 32, "slots": 16, "slot_ram_gib": 1, "overhead_gib": 4, "scratch_gib": 100},
+    "render": {"name": "DOCX/PPTX 조립·미리보기", "vcpu": 8, "ram_gib": 32, "slots": 8, "slot_ram_gib": 2, "overhead_gib": 4, "scratch_gib": 200}
+  },
+  "fixed_services": [
+    {"name": "FastAPI", "count": 3, "vcpu": 4, "ram_gib": 8},
+    {"name": "비동기 작업 조정", "count": 3, "vcpu": 4, "ram_gib": 8},
+    {"name": "RDB primary/standby", "count": 2, "vcpu": 4, "ram_gib": 16},
+    {"name": "Redis 데이터·감시 배치 예산", "count": 3, "vcpu": 2, "ram_gib": 4},
+    {"name": "관측·관리", "count": 2, "vcpu": 4, "ram_gib": 8}
+  ]
+}
