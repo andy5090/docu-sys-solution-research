@@ -8,6 +8,8 @@
 - [1차 오픈: 09~18시 1,500명 트래픽·서버·레플리카 준비안](docs/1차_오픈_용량_계획.md)
 - [시나리오별 계산 결과](docs/산정_결과.md)
 - [산정 입력값](capacity/inputs.json)
+- [권장 서버 용량 추정 보고서 (DOCX)](docs/권장_서버_용량_추정.docx) · [편집 원본](docs/권장_서버_용량_추정.md)
+- [사이드바 가로 텍스트 로고와 브랜드 에셋](brand/g-hess/README.md) · [전체 로고 키트 ZIP](brand/g-hess-logo-kit.zip)
 
 사용자가 확인한 현재 상태는 **DeDRM 완료 문서 약 6.1만 건·95GB**, **WeKnora 파서·청커 포팅**, **이미지 추출 후 PaddleOCRv5**, **2026-09-15 기준 7,585,436개 청크 임베딩 완료**, **기존 Milvus에 별도 샤드 설정 없음**이다. 남은 작업은 **프로덕션 컬렉션 이관, 메타데이터 보강, 샤드·인덱스 및 성능 검증**이다. FastAPI와 사내 GLM-5.3-Flash를 사용하며, 기존 G-HeSS 검색 API 재사용은 검토 중이다. 1차 오픈 예상 이용자는 **09~18시 약 1,500명**으로, 산정에서는 일일 이용자 수로 해석했다.
 
@@ -25,6 +27,13 @@
 python3 capacity/estimate.py --output docs/산정_결과.md
 python3 capacity/estimate.py --json
 python3 -m unittest discover -s capacity -v
+```
+
+Word 보고서는 편집 원본 Markdown에서 생성한다. 문서 내 수치는 입력·계산 결과와 대조한 스냅샷이므로 입력 변경 시 원본 보고서도 갱신한다. DOCX 내보내기에만 별도 의존성이 필요하다.
+
+```bash
+python3 -m pip install -r capacity/requirements-docx.txt
+python3 capacity/export_docx.py
 ```
 
 현재 폴더에는 실제 서비스 구현 코드가 없어, 구현 현황은 사용자 설명을 근거로 기록했다. 실제 모델 성능·Milvus 설정·API 계약을 검증한 운영 확정판은 아니다.

@@ -18,4 +18,24 @@
 
 사용 크기 권장: 기본 아이콘 24px 이상, 문서형 아이콘 32px 이상, 텍스트 로고 180px 이상, 조합형 260px 이상. 16px 환경에서는 01-g-link 아이콘을 우선 검토합니다. 로고 둘레에는 아이콘 높이의 1/4 이상 여백을 두고 비율을 유지합니다.
 
-재생성: `node brand/g-hess/generate.mjs`. SVG 원본을 생성하며 PNG는 `rsvg-convert`로 별도 내보냅니다. 기존 프로젝트 문서와 프로그램은 수정하지 않았습니다.
+## 사이드바용 가로 텍스트 로고
+
+`sidebar/`에는 아이콘 없이 **G-HeSS AI Agent**를 한 줄로 배치한 공통 워드마크가 있습니다. [미리보기](sidebar/preview.png)에서 밝은 배경과 어두운 배경을 비교할 수 있습니다.
+
+| 파일 | 표시 크기 | 용도 |
+|---|---|---|
+| `sidebar/wordmark.svg` | 224 × 40px | 전체 이름, 기본형 |
+| `sidebar/wordmark-white.svg` | 224 × 40px | 어두운 사이드바 |
+| `sidebar/wordmark-mono.svg` | 224 × 40px | Indigo 단색 |
+| `sidebar/wordmark-compact.svg` | 128 × 40px | 좁은 영역용 G-HeSS 축약 표기 |
+| `sidebar/wordmark-compact-white.svg` | 128 × 40px | 축약 표기, 어두운 배경 |
+| `sidebar/wordmark-compact-mono.svg` | 128 × 40px | 축약 표기, 단색 |
+
+각 SVG와 같은 이름의 투명 PNG를 1배·2배(`@2x`)·3배(`@3x`)로 제공합니다. 전체형은 사이드바 폭 256px·좌우 여백 16px에 맞습니다. 224px보다 좁은 로고 영역에는 축약형을 사용합니다. 축약형의 접근성 이름은 앱에서 전체 서비스명으로 지정합니다. 높이 40px인 에셋 내부의 글자 높이는 약 26px이며, 비율을 유지합니다.
+
+```html
+<img src="/brand/g-hess/sidebar/wordmark.svg"
+     width="224" height="40" alt="G-HeSS AI Agent">
+```
+
+재생성: `node brand/g-hess/generate.mjs` (또는 `bun brand/g-hess/generate.mjs`). SVG 원본을 생성하며 PNG는 `rsvg-convert`로 내보냅니다. 사이드바 PNG와 전체 키트 ZIP 갱신은 `python3 brand/g-hess/package.py`를 실행합니다. Python 표준 라이브러리와 `rsvg-convert`가 필요합니다.

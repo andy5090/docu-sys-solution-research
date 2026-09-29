@@ -45,6 +45,34 @@ function svg(w, h, title, body) {
 function lockup(c, color = ink, detail = accent) {
   return `<g transform="translate(8 12)">${c.icon(color, detail)}</g><g transform="translate(171 8)">${wordmark(color, detail)}</g>`;
 }
+// A single line, path-only wordmark for a 256px sidebar (16px side padding).
+function sidebarWordmark(color = ink, detail = accent, compact = false) {
+  return `<g transform="translate(5 8) scale(.31)">${glyphs(letters, color, 9.5)}</g>${compact ? '' : `<g transform="translate(134 14) scale(.5)">${glyphs(subletters, detail, 3.2)}</g>`}`;
+}
+const sidebarDir = path.join(root, 'sidebar');
+await mkdir(sidebarDir, { recursive: true });
+for (const [suffix, a, b] of [['', ink, accent], ['-white', '#FFFFFF', tint], ['-mono', ink, ink]]) {
+  for (const compact of [false, true]) {
+    await writeFile(path.join(sidebarDir, `wordmark${compact ? '-compact' : ''}${suffix}.svg`),
+      svg(compact ? 128 : 224, 40, compact ? 'G-HeSS' : 'G-HeSS AI Agent', sidebarWordmark(a, b, compact)));
+  }
+}
+await writeFile(path.join(sidebarDir, 'preview.svg'), svg(800, 400, 'Sidebar wordmarks — light, dark and compact', `
+  <rect width="800" height="400" fill="#F5F5FA"/>
+  <g font-family="sans-serif" font-size="14" fill="#4747B3">
+    <text x="32" y="36">SIDEBAR / SINGLE-LINE WORDMARK / ACTUAL SIZE</text>
+    <rect x="32" y="64" width="352" height="288" rx="16" fill="#FFFFFF"/>
+    <rect x="416" y="64" width="352" height="288" rx="16" fill="#24243E"/>
+    <g transform="translate(56 92)">${sidebarWordmark()}</g>
+    <g transform="translate(440 92)">${sidebarWordmark('#FFFFFF', tint)}</g>
+    <text x="56" y="170">224 × 40 / full name</text>
+    <text x="440" y="170" fill="#C9C9FF">224 × 40 / dark background</text>
+    <path d="M56 200H360M440 200H744" stroke="#9B9BBC" stroke-opacity=".35"/>
+    <g transform="translate(56 230)">${sidebarWordmark(ink, ink, true)}</g>
+    <g transform="translate(440 230)">${sidebarWordmark('#FFFFFF', tint, true)}</g>
+    <text x="56" y="310">128 × 40 / compact</text>
+    <text x="440" y="310" fill="#C9C9FF">128 × 40 / compact</text>
+  </g>`));
 for (const c of concepts) {
   const dir = path.join(root, c.id);
   await mkdir(dir, { recursive: true });
